@@ -1,0 +1,10 @@
+[package]
+name = "webb_os"
+version = "0.1.0"
+authors = ["Jeremiah Webb Jeremiah_L_Webb@hotmail.com"]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
