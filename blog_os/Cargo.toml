@@ -1,4 +1,5 @@
 [package]
+
 name = "blog_os"
 version = "0.1.0"
 authors = ["Jeremiah Webb Jeremiah_L_Webb@hotmail.com"]
@@ -13,3 +14,4 @@ panic = "abort" # disable stack unwinding on panic
 
 [dependencies]
 bootloader = "0.9.23"
+volatile = "0.2.6"

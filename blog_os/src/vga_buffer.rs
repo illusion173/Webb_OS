@@ -1,5 +1,16 @@
+extern crate volatile;
+use vga_buffer::volatile::Volatile;
 const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
+
+use core::fmt;
+
+impl fmt::Write for Writer {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.write_string(s);
+        Ok(())
+    }
+}
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -26,7 +37,6 @@ pub enum Color {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
 struct ColorCode(u8);
-
 impl ColorCode {
     fn new(foreground: Color, background: Color) -> ColorCode {
         ColorCode((background as u8) << 4 | (foreground as u8))
@@ -42,7 +52,7 @@ struct ScreenChar {
 
 #[repr(transparent)]
 struct Buffer {
-    chars: [[ScreenChar; BUFFER_WIDTH]; BUFFER_HEIGHT],
+    chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
 }
 
 pub struct Writer {
@@ -63,36 +73,38 @@ impl Writer {
                 let col = self.column_position;
 
                 let color_code = self.color_code;
-
-                self.buffer.chars[row][col] = ScreenChar {
+                self.buffer.chars[row][col].write(ScreenChar {
                     ascii_character: byte,
                     color_code,
-                };
+                });
                 self.column_position += 1;
             }
         }
     }
-    pub fn write_string(&mut self, s: &str){
-        for byte in s.bytes(){
-            match byte{
+    pub fn write_string(&mut self, s: &str) {
+        for byte in s.bytes() {
+            match byte {
                 //print ASCII byte or newline
                 0x20..=0x7e | b'\n' => self.write_byte(byte),
                 // Not apart of ascii range
-               _=>self.write_byte(0xfe),
+                _ => self.write_byte(0xfe),
             }
         }
     }
-    fn new_line(&mut self){/*TODO*/}
+    fn new_line(&mut self) { /*TODO*/
+    }
 }
 
-pub fn print_something(){
-    let mut writer = Writer{
+pub fn print_something() {
+    use core::fmt::Write;
+    let mut writer = Writer {
         column_position: 0,
         color_code: ColorCode::new(Color::Yellow, Color::Black),
-        buffer: unsafe{ &mut *(0xb8000 as *mut Buffer)},
+        buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
     };
+
     writer.write_byte(b'H');
     writer.write_string("ello! ");
-    writer.write_string("World!");
+    writer.write_string("The numbers are ");
+    write!(writer, "The numbers are {} and {}", 42, 1.0 / 3.0).unwrap();
 }
-
