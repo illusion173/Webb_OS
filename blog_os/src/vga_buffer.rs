@@ -1,8 +1,11 @@
+extern crate lazy_static;
+extern crate spin;
 extern crate volatile;
+use vga_buffer::lazy_static::lazy_static;
+use vga_buffer::spin::Mutex;
 use vga_buffer::volatile::Volatile;
 const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
-
 use core::fmt;
 
 impl fmt::Write for Writer {
@@ -53,6 +56,14 @@ struct ScreenChar {
 #[repr(transparent)]
 struct Buffer {
     chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
+}
+
+lazy_static! {
+    pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
+        column_position: 0,
+        color_code: ColorCode::new(Color::Yellow, Color::Black),
+        buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
+    });
 }
 
 pub struct Writer {
@@ -111,22 +122,4 @@ impl Writer {
             self.buffer.chars[row][col].write(blank);
         }
     }
-}
-
-pub fn print_something() {
-    use core::fmt::Write;
-    let mut writer = Writer {
-        column_position: 0,
-        color_code: ColorCode::new(Color::Yellow, Color::Black),
-        buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
-    };
-    write!(writer, "Would you like some shit? - Chef").unwrap();
-    write!(writer, "\n").unwrap();
-    write!(
-        writer,
-        "Student loans? - Chef\n
-        No. -Felicity\n
-        Im sorry, youre dying. - Chef\n"
-    )
-    .unwrap();
 }
